@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>XIV Cow Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 16px;
+  line-height: 1.4;
+}
+
+h1 {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.intro-area {
+  max-width: 720px;
+  margin: 0 auto 18px;
+  text-align: center;
+}
+
+.intro-area p {
+  margin: 8px 0;
+}
+
+.intro-links a {
+  margin: 0 10px;
+}
+
+.comic-title,
+h1.comic-title,
+h2.comic-title {
+  font-family: "Comic Neue", cursive !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: 0;
+}
+
+h1.comic-title {
+  font-size: 42px;
+}
+
+h2.comic-title {
+  font-size: 32px;
+}
+
+.title-rule {
+  border: 0;
+  border-top: 3px solid #000;
+  margin: 22px 0 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  align-items: start;
+  position: relative;
+}
+
+.columns::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
+  background: #000;
+}
+
+.tool-card {
+  padding: 18px 34px;
+  min-height: 360px;
+  text-align: center;
+}
+
+.tool-card h2 { margin-top: 0; }
+
+section { margin: 0; }
+label { display: block; margin: 10px 0; }
+a {
+  display: inline-block;
+  margin: 8px 8px;
+}
+.status { min-height: 1.2em; white-space: pre-line; }
+
+.cow-image-wrap {
+  margin: 34px auto 0;
+  text-align: center;
+}
+
+.cow-image-wrap img {
+  display: block;
+  width: min(430px, 100%);
+  height: auto;
+  margin: 0 auto;
+}
+
+@media (max-width: 760px) {
+  .columns { grid-template-columns: 1fr; }
+  .columns::before { display: none; }
+  .tool-card { padding: 18px 0; }
+}
+</style>
+</head>
+<body>
+
+<h1 class="comic-title">XIV Cow Tools</h1>
+<div class="intro-area">
+  <p>Various tools for XIV housing / remakeplace JSON handling.</p>
+  <p class="intro-links">
+    <a href="https://petralaplace.carrd.co/">Website</a>
+    <a href="https://discord.gg/4NhbUm33Re">Discord</a>
+  </p>
+</div>
+<hr class="title-rule">
+
+<main class="columns">
+  <section id="teamcraft" class="tool-card">
+    <h2 class="comic-title">Teamcraft Converter</h2>
+    <p>Take a remakeplace .json file, and turn it into a teamcraft list! None of the other ones dealt with wallpapers, so I made my own!</p>
+    <label>Upload <input type="file" id="tcfile" accept=".json"></label>
+    <p id="tcstatus" class="status"></p>
+    <a id="standardtclink" href="#" target="_blank" style="display:none">Open Teamcraft</a>
+  </section>
+
+  <section id="redesigner" class="tool-card">
+    <h2 class="comic-title">Redesigner</h2>
+    <p>Take the current file of your house in game, and then upload your new house file you have yet to build!</p>
+    <p>This will output a "junkpile" json, which is your new house with all things in common with your own house placed where they need to be, and everything NOT in common with your old house placed in a junk pile at the origin, for easy cleaning!</p>
+    <p>This will also output a json of just the stuff you need to get for use with pyshopper, along with an associated teamcraft list generation link.</p>
+
+    <label>Current <input type="file" id="oldfile" accept=".json"></label>
+    <p id="oldstatus" class="status"></p>
+
+    <div id="newuploadwrap" style="display:none">
+      <label>New <input type="file" id="newfile" accept=".json"></label>
+      <p id="newstatus" class="status"></p>
+    </div>
+
+    <p id="redesignstatus" class="status"></p>
+    <a id="dllink" href="#" style="display:none">Download JSON with junk pile</a>
+    <a id="pyshopperlink" href="#" style="display:none">Download new addition json</a>
+    <a id="redesigntclink" href="#" target="_blank" style="display:none">Open teamcraft</a>
+  </section>
+</main>
+
+<div class="cow-image-wrap">
+  <img src="cowtools.png" alt="Cow tools illustration">
+</div>
+
+<script>
+var DYE_TABLE = {
+  "312D57": ["Abyssal Blue", 52254],   "8E581B": ["Acorn Brown", 52254],
+  "5F7558": ["Adamantoise Green", 52254], "A2875C": ["Aldgoat Brown", 52254],
+  "9BB363": ["Apple Green", 52254],    "ACA8A2": ["Ash Grey", 52254],
+  "3A4C90": ["Azure Blue", 52256],     "6A4B37": ["Bark Brown", 52254],
+  "913B27": ["Blood Red", 52254],      "EBD3A0": ["Bone White", 52254],
+  "F45011": ["Bright Orange", 52256],  "658241": ["Cactuar Green", 52254],
+  "FEF864": ["Canary Yellow", 52255],  "DE0B16": ["Carmine Red", 52256],
+  "96BDB9": ["Celeste Green", 52254],  "4F5766": ["Ceruleum Blue", 52254],
+  "484742": ["Charcoal Grey", 52254],  "F5379B": ["Cherry Pink", 52255],
+  "3D290D": ["Chestnut Brown", 52254], "6E3D24": ["Chocolate Brown", 52254],
+  "BC8804": ["Coeurl Yellow", 52254],  "DC9BCA": ["Colibri Pink", 52254],
+  "CC6C5E": ["Coral Pink", 52254],     "C99156": ["Cork Brown", 52254],
+  "8E9BAC": ["Corpse Blue", 52254],    "F2D770": ["Cream Yellow", 52254],
+  "322C3B": ["Currant Purple", 52254], "781A1A": ["Dalamud Red", 52254],
+  "121F2D": ["Dark Blue", 13714],      "28211C": ["Dark Brown", 13710],
+  "152C2C": ["Dark Green", 13712],     "232026": ["Dark Purple", 13716],
+  "321919": ["Dark Red", 13709],       "1E2A21": ["Deepwood Green", 52254],
+  "DBB457": ["Desert Yellow", 52254],  "000EA2": ["Dragoon Blue", 52255],
+  "514560": ["Gloom Purple", 52254],   "B9A489": ["Gobbiebag Brown", 52254],
+  "898784": ["Goobbue Grey", 52254],   "3B2A3D": ["Grape Purple", 52254],
+  "606068": ["Gunmetal Black", 52255], "A58430": ["Halatali Yellow", 52254],
+  "FAC62B": ["Honey Yellow", 52254],   "284B2C": ["Hunter Green", 52254],
+  "B2C4CE": ["Ice Blue", 52254],       "1A1F27": ["Ink Blue", 52254],
+  "B79EBC": ["Iris Purple", 52254],    "1E1E1E": ["Jet Black", 13115],
+  "30211B": ["Kobold Brown", 52254],   "877FAE": ["Lavender Purple", 52254],
+  "836969": ["Lilac Purple", 52254],   "ABB054": ["Lime Green", 52254],
+  "3F3329": ["Loam Brown", 52254],     "FECEF5": ["Lotus Pink", 52254],
+  "323621": ["Marsh Green", 52254],    "8B9C63": ["Meadow Green", 52254],
+  "7D3906": ["Mesa Red", 52254],       "5052D9": ["Metallic Blue", 13722],
+  "E7D197": ["Metallic Brass", 52255], "15423F": ["Metallic Cobalt Green", 52256],
+  "08021F": ["Metallic Dark Blue", 52256], "EDE63D": ["Metallic Gold", 13117],
+  "22A757": ["Metallic Green", 13720], "E48C2F": ["Metallic Orange", 13718],
+  "A2596B": ["Metallic Pink", 52256],  "A366C2": ["Metallic Purple", 13723],
+  "B61D4B": ["Metallic Red", 13717],   "1F0000": ["Metallic Ruby Red", 52256],
+  "A7A7A7": ["Metallic Silver", 13116],"5ED4E6": ["Metallic Sky Blue", 13721],
+  "F4DA46": ["Metallic Yellow", 13719],"181937": ["Midnight Blue", 52254],
+  "E49E34": ["Millioncorn Yellow", 52254], "615245": ["Mole Brown", 52254],
+  "1F4646": ["Morbol Green", 52254],   "707326": ["Moss Green", 52254],
+  "585230": ["Mud Green", 52254],      "B5F710": ["Neon Green", 52256],
+  "ED118E": ["Neon Pink", 52256],      "DFEA08": ["Neon Yellow", 52256],
+  "3B4D3C": ["Nophica Green", 52254],  "406339": ["Ochu Green", 52254],
+  "4B5232": ["Olive Green", 52254],    "7B5C2D": ["Opo-opo Brown", 52254],
+  "644216": ["Orchard Brown", 52254],  "2F5889": ["Othard Blue", 52254],
+  "96A4D9": ["Pastel Blue", 13713],    "BACFAA": ["Pastel Green", 13711],
+  "FDC8C6": ["Pastel Pink", 13708],    "BBB5DA": ["Pastel Purple", 13715],
+  "3B6886": ["Peacock Blue", 52254],   "E9E3DA": ["Pearl White", 52255],
+  "79526C": ["Plum Purple", 52254],    "C57424": ["Pumpkin Orange", 52254],
+  "F9F8F4": ["Pure White", 13114],     "996E3F": ["Qiqirn Brown", 52254],
+  "403311": ["Raisin Brown", 52254],   "5B7FC0": ["Raptor Blue", 52254],
+  "66304E": ["Regal Purple", 52254],   "1C3D54": ["Rhotano Blue", 52254],
+  "5B1729": ["Rolanberry Red", 52254], "E69F96": ["Rose Pink", 52254],
+  "273067": ["Royal Blue", 52254],     "E40011": ["Ruby Red", 52255],
+  "4F2D1F": ["Russet Brown", 52254],   "622207": ["Rust Red", 52254],
+  "E4AA8A": ["Salmon Pink", 52254],    "6481A0": ["Seafog Blue", 52254],
+  "373747": ["Shadow Blue", 52254],    "92816C": ["Shale Brown", 52254],
+  "83B0D2": ["Sky Blue", 52254],       "656565": ["Slate Grey", 52254],
+  "E4DFD0": ["Snow White", 52254],     "2B2923": ["Soot Black", 52254],
+  "234172": ["Storm Blue", 52254],     "B75C2D": ["Sunset Orange", 52254],
+  "BBBB8A": ["Sylph Green", 52254],    "04AFCD": ["Turquoise Blue", 52255],
+  "437272": ["Turquoise Green", 52254],"B7A370": ["Ul Brown", 52254],
+  "FBF1B4": ["Vanilla Yellow", 52255], "62508F": ["Violet Purple", 52256],
+  "112944": ["Void Blue", 52254],      "451511": ["Wine Red", 52254],
+  "2F3851": ["Woad Blue", 52254],
+};
+
+function isDict(o) { return o !== null && typeof o === "object" && !Array.isArray(o); }
+
+function normColor(c) {
+  if (c === null || c === undefined) return null;
+  var s = String(c).toUpperCase();
+  if (s.length < 6) return null;
+  return s.slice(0, 6);
+}
+
+function parseDesign(data) {
+  var res = { instances: [], materials: [], fixtures: [], nameLookup: {} };
+  var isApartment = (data["houseSize"] === "Apartment");
+
+  function note(id, name) {
+    if (id && name && !res.nameLookup[id]) res.nameLookup[id] = name;
+  }
+
+  function addFurniture(obj, category, kind) {
+    if (!isDict(obj)) return;
+    var id = Number(obj["itemId"]) || 0;
+    if (id > 0) {
+      var col = null;
+      if (isDict(obj["properties"])) col = normColor(obj["properties"]["color"]);
+      res.instances.push({ itemId: id, name: obj["name"] || null, color: col, category: category, kind: kind, ref: obj });
+      note(id, obj["name"]);
+    }
+
+    if (isDict(obj["properties"]) && isDict(obj["properties"]["material"])) {
+      var m = obj["properties"]["material"];
+      var mid = Number(m["itemId"]) || 0;
+      if (mid > 0) {
+        res.materials.push({ itemId: mid, name: m["name"] || null, category: category, source: "wallpaper" });
+        note(mid, m["name"]);
+      }
+    }
+    var atts = obj["attachments"];
+    if (Array.isArray(atts)) {
+      for (var a = 0; a < atts.length; a++) addFurniture(atts[a], category, "attachment");
+    }
+  }
+
+  var furnSets = [["interior", data["interiorFurniture"] || []]];
+  if (!isApartment) furnSets.push(["exterior", data["exteriorFurniture"] || []]);
+  var s, j;
+  for (s = 0; s < furnSets.length; s++) {
+    var cat = furnSets[s][0], arr = furnSets[s][1];
+    for (j = 0; j < arr.length; j++) addFurniture(arr[j], cat, "furniture");
+  }
+
+  var fixSets = [["interior", data["interiorFixture"] || []]];
+  if (!isApartment) fixSets.push(["exterior", data["exteriorFixture"] || []]);
+  var seenFixtures = {};
+  for (s = 0; s < fixSets.length; s++) {
+    var fcat = fixSets[s][0], farr = fixSets[s][1];
+    for (j = 0; j < farr.length; j++) {
+      var f = farr[j];
+      if (!isDict(f)) continue;
+      var fid = Number(f["itemId"]) || 0;
+      if (fid <= 0) continue;
+      var fixKey = fcat + "|" + fid + "|" + (f["level"] || "");
+      if (seenFixtures[fixKey]) continue;
+      seenFixtures[fixKey] = true;
+      res.fixtures.push({ itemId: fid, name: f["name"] || null, level: f["level"] || "", category: fcat });
+      note(fid, f["name"]);
+    }
+  }
+
+  return res;
+}
+
+function diffDesigns(oldP, newP) {
+  var d = {
+    obtained: {},
+    buy: {},
+    buyEntries: [],
+    junkInstances: [],
+    notJunkable: {},
+    obtainedRefs: [],
+    dyeCounts: {},
+    dyeNamesTally: {},
+    unknownColors: []
+  };
+
+  function bump(map, id, n) {
+    if (!n) return;
+    if (!(id in map)) map[id] = 0;
+    map[id] += n;
+  }
+
+  var dyeHexNeeds = [];
+
+
+  var oldBy = {}, newBy = {}, i, j;
+  for (i = 0; i < oldP.instances.length; i++) {
+    var oi = oldP.instances[i];
+    if (!oldBy[oi.itemId]) oldBy[oi.itemId] = [];
+    oldBy[oi.itemId].push(oi);
+  }
+  for (i = 0; i < newP.instances.length; i++) {
+    var ni = newP.instances[i];
+    if (!newBy[ni.itemId]) newBy[ni.itemId] = [];
+    newBy[ni.itemId].push(ni);
+  }
+
+  var allIds = {};
+  var k;
+  for (k in oldBy) allIds[k] = true;
+  for (k in newBy) allIds[k] = true;
+
+  for (k in allIds) {
+    var olds = oldBy[k] || [];
+    var news = newBy[k] || [];
+    var usedOld = [], matchedNew = [];
+    for (j = 0; j < olds.length; j++) usedOld.push(false);
+    for (i = 0; i < news.length; i++) matchedNew.push(false);
+
+
+    for (i = 0; i < news.length; i++) {
+      for (j = 0; j < olds.length; j++) {
+        if (!usedOld[j] && olds[j].color === news[i].color) {
+          usedOld[j] = true;
+          matchedNew[i] = true;
+          bump(d.obtained, k, 1);
+          d.obtainedRefs.push(news[i].ref);
+          break;
+        }
+      }
+    }
+
+    for (i = 0; i < news.length; i++) {
+      if (matchedNew[i]) continue;
+      for (j = 0; j < olds.length; j++) {
+        if (!usedOld[j]) {
+          usedOld[j] = true;
+          matchedNew[i] = true;
+          bump(d.obtained, k, 1);
+          d.obtainedRefs.push(news[i].ref);
+          if (news[i].color !== null) dyeHexNeeds.push(news[i].color);
+          break;
+        }
+      }
+    }
+
+    for (i = 0; i < news.length; i++) {
+      if (!matchedNew[i]) {
+        bump(d.buy, k, 1);
+        d.buyEntries.push({
+          itemId: news[i].itemId,
+          name: news[i].name || null,
+          category: news[i].category || "interior",
+          source: "furniture"
+        });
+        if (news[i].color !== null) dyeHexNeeds.push(news[i].color);
+      }
+    }
+    for (j = 0; j < olds.length; j++) {
+      if (!usedOld[j]) d.junkInstances.push(olds[j]);
+    }
+  }
+
+
+  function countMatch(oldArr, newArr, source) {
+    var oc = {}, newById = {}, id;
+    for (var a = 0; a < oldArr.length; a++) bump(oc, oldArr[a].itemId, 1);
+    for (var b = 0; b < newArr.length; b++) {
+      id = String(newArr[b].itemId);
+      if (!newById[id]) newById[id] = [];
+      newById[id].push(newArr[b]);
+    }
+    var ids = {};
+    for (id in oc) ids[id] = true;
+    for (id in newById) ids[id] = true;
+    for (id in ids) {
+      var o = oc[id] || 0, n = newById[id] ? newById[id].length : 0;
+      var ob = Math.min(o, n);
+      var missing = Math.max(0, n - o);
+      bump(d.obtained, id, ob);
+      bump(d.buy, id, missing);
+      bump(d.notJunkable, id, Math.max(0, o - n));
+      if (missing > 0 && newById[id]) {
+        for (var m = 0; m < missing; m++) {
+          var entry = newById[id][m];
+          d.buyEntries.push({
+            itemId: entry.itemId,
+            name: entry.name || null,
+            category: entry.category || "interior",
+            level: entry.level || "",
+            source: source
+          });
+        }
+      }
+    }
+  }
+  countMatch(oldP.fixtures, newP.fixtures, "fixture");
+  countMatch(oldP.materials, newP.materials, "wallpaper");
+
+
+  for (i = 0; i < dyeHexNeeds.length; i++) {
+    var hex = dyeHexNeeds[i];
+    if (DYE_TABLE[hex]) {
+      bump(d.dyeCounts, DYE_TABLE[hex][1], 1);
+      bump(d.dyeNamesTally, DYE_TABLE[hex][0], 1);
+    } else {
+      d.unknownColors.push(hex);
+    }
+  }
+
+  return d;
+}
+
+
+function buildTeamcraftUrl(buyMap, dyeCounts) {
+  var counter = {}, id;
+  for (id in buyMap) { if (buyMap[id] > 0) counter[id] = buyMap[id]; }
+  for (id in dyeCounts) {
+    if (!(id in counter)) counter[id] = 0;
+    counter[id] += dyeCounts[id];
+  }
+  var dictIDs = Object.keys(counter);
+  if (dictIDs.length === 0) return null;
+  var furniturelistfull = [];
+  for (var j = 0; j < dictIDs.length; j++) {
+    furniturelistfull.push(String(dictIDs[j]));
+    furniturelistfull.push(",null,");
+    furniturelistfull.push(String(counter[dictIDs[j]]));
+    furniturelistfull.push(";");
+  }
+  furniturelistfull.pop();
+  var pre_encoded_string = furniturelistfull.join("");
+  return "https://ffxivteamcraft.com/import/" + btoa(pre_encoded_string);
+}
+
+
+function zeroLocation(transform) {
+  var L = transform["location"];
+  if (Array.isArray(L)) {
+    if (L.length < 3) { transform["location"] = [0, 0, 0]; return; }
+    for (var i = 0; i < L.length; i++) L[i] = 0;
+  } else if (isDict(L)) {
+    var keys = ["x", "y", "z", "X", "Y", "Z"];
+    var hit = false;
+    for (var j = 0; j < keys.length; j++) {
+      if (keys[j] in L) { L[keys[j]] = 0; hit = true; }
+    }
+    if (!hit) transform["location"] = [0, 0, 0];
+  } else if (typeof L === "string") {
+    transform["location"] = "0,0,0";
+  } else {
+    transform["location"] = [0, 0, 0];
+  }
+}
+
+
+function buildOutput(outData, diff, opts) {
+  var i;
+  if (opts.markerFields) {
+    for (i = 0; i < diff.obtainedRefs.length; i++) {
+      diff.obtainedRefs[i]["obtained"] = true;
+    }
+  }
+  for (i = 0; i < diff.junkInstances.length; i++) {
+    var inst = diff.junkInstances[i];
+    var copy = JSON.parse(JSON.stringify(inst.ref));
+    copy["attachments"] = [];
+    if (!isDict(copy["transform"])) {
+      copy["transform"] = { "location": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1] };
+    } else {
+      zeroLocation(copy["transform"]);
+    }
+    if (opts.markerFields) copy["junk"] = true;
+    var key = inst.category + "Furniture";
+    if (!Array.isArray(outData[key])) outData[key] = [];
+    outData[key].push(copy);
+  }
+  return outData;
+}
+
+
+function syntheticFurnitureEntry(itemId, name) {
+  return {
+    itemId: Number(itemId) || 0,
+    name: name || ("item #" + itemId),
+    transform: { location: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] },
+    properties: {}
+  };
+}
+
+function dyeItemIdForStainName(stainName) {
+  for (var hex in DYE_TABLE) {
+    if (DYE_TABLE[hex][0] === stainName) return DYE_TABLE[hex][1];
+  }
+  return null;
+}
+
+function buildPyShopperJson(baseData, diff) {
+  var out = {
+    lightLevel: baseData.lightLevel || 0,
+    houseSize: baseData.houseSize || "",
+    interiorScale: baseData.interiorScale || 100,
+    exteriorScale: baseData.exteriorScale || 100,
+    interiorFixture: [],
+    exteriorFixture: [],
+    interiorFurniture: [],
+    exteriorFurniture: [],
+    metaData: {
+      version: isDict(baseData.metaData) && baseData.metaData.version !== undefined ? baseData.metaData.version : undefined,
+      source: "XIV Cow Tools Redesigner",
+      note: "Contains only items and dyes still needed after comparing the current and new designs."
+    }
+  };
+
+  function addSynthetic(itemId, name, category, source) {
+    var key = category === "exterior" ? "exteriorFurniture" : "interiorFurniture";
+    out[key].push(syntheticFurnitureEntry(itemId, name));
+  }
+
+  for (var i = 0; i < diff.buyEntries.length; i++) {
+    var e = diff.buyEntries[i];
+    if (e.source === "fixture") {
+      var fixtureKey = e.category === "exterior" ? "exteriorFixture" : "interiorFixture";
+      out[fixtureKey].push({
+        level: e.level || "",
+        type: "Needed",
+        name: e.name || ("item #" + e.itemId),
+        itemId: Number(e.itemId) || 0,
+        color: ""
+      });
+    } else {
+      addSynthetic(e.itemId, e.name, e.category, e.source);
+    }
+  }
+
+  var dyeNames = Object.keys(diff.dyeNamesTally).sort();
+  for (var d = 0; d < dyeNames.length; d++) {
+    var stainName = dyeNames[d];
+    var dyeItemId = dyeItemIdForStainName(stainName);
+    if (!dyeItemId) continue;
+    for (var n = 0; n < diff.dyeNamesTally[stainName]; n++) {
+      addSynthetic(dyeItemId, "Dye - " + stainName, "interior", "dye");
+    }
+  }
+
+  return out;
+}
+
+
+var oldData = null;
+var newData = null;
+var newFileName = "new_design.json";
+var lastBlobUrl = null;
+var lastPyShopperBlobUrl = null;
+
+function bump(map, id, n) {
+  if (!n) return;
+  if (!(id in map)) map[id] = 0;
+  map[id] += n;
+}
+
+function looksLikeMakePlace(data) {
+  return !!(data && (data.interiorFurniture || data.exteriorFurniture || data.interiorFixture));
+}
+
+function setStatus(id, text, isError) {
+  var el = document.getElementById(id);
+  el.textContent = text || "";
+  el.style.color = isError ? "#a00000" : "";
+}
+
+function readJsonFile(input, statusId, done, fail) {
+  function failWithError() {
+    setStatus(statusId, "error", true);
+    if (typeof fail === "function") fail();
+  }
+
+  var file = input.files[0];
+  if (!file) {
+    setStatus(statusId, "", false);
+    if (typeof fail === "function") fail();
+    return;
+  }
+
+  setStatus(statusId, "", false);
+
+  if (!file.name.toLowerCase().endsWith(".json")) {
+    failWithError();
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onerror = failWithError;
+  reader.onload = function () {
+    var data;
+    try {
+      data = JSON.parse(reader.result);
+    } catch (e) {
+      failWithError();
+      return;
+    }
+    if (!looksLikeMakePlace(data)) {
+      failWithError();
+      return;
+    }
+    try {
+      done(data, file);
+    } catch (e) {
+      failWithError();
+    }
+  };
+  reader.readAsText(file);
+}
+
+function buildStandardImport(data) {
+  var parsed = parseDesign(data);
+  var items = {};
+  var dyes = {};
+  var unknownColors = [];
+  var i, item, hex, stain;
+
+  for (i = 0; i < parsed.instances.length; i++) {
+    item = parsed.instances[i];
+    bump(items, item.itemId, 1);
+    if (item.color !== null) {
+      hex = item.color;
+      stain = DYE_TABLE[hex];
+      if (stain) bump(dyes, stain[1], 1);
+      else unknownColors.push(hex);
+    }
+  }
+  for (i = 0; i < parsed.fixtures.length; i++) bump(items, parsed.fixtures[i].itemId, 1);
+  for (i = 0; i < parsed.materials.length; i++) bump(items, parsed.materials[i].itemId, 1);
+
+  return {
+    url: buildTeamcraftUrl(items, dyes),
+    unknownColors: unknownColors
+  };
+}
+
+var tcFileInput = document.getElementById("tcfile");
+if (tcFileInput) {
+  tcFileInput.onchange = function () {
+    var link = document.getElementById("standardtclink");
+    if (link) link.style.display = "none";
+    readJsonFile(this, "tcstatus", function (data) {
+      var result = buildStandardImport(data);
+      if (result.url && link) {
+        link.href = result.url;
+        link.style.display = "inline-block";
+      }
+    });
+  };
+}
+
+function resetRedesignerOutputs() {
+  var dl = document.getElementById("dllink");
+  var tc = document.getElementById("redesigntclink");
+  var py = document.getElementById("pyshopperlink");
+  if (dl) dl.style.display = "none";
+  if (tc) tc.style.display = "none";
+  if (py) py.style.display = "none";
+  setStatus("redesignstatus", "", false);
+}
+
+function showNewUploadSection(show) {
+  var wrap = document.getElementById("newuploadwrap");
+  if (wrap) wrap.style.display = show ? "block" : "none";
+}
+
+var oldFileInput = document.getElementById("oldfile");
+if (oldFileInput) {
+  oldFileInput.onchange = function () {
+    oldData = null;
+    newData = null;
+    setStatus("newstatus", "", false);
+    resetRedesignerOutputs();
+    showNewUploadSection(false);
+    if (newFileInput) newFileInput.value = "";
+
+    readJsonFile(this, "oldstatus", function (data) {
+      oldData = data;
+      showNewUploadSection(true);
+      runDiff();
+    }, function () {
+      oldData = null;
+      newData = null;
+      setStatus("newstatus", "", false);
+      resetRedesignerOutputs();
+      showNewUploadSection(false);
+      if (newFileInput) newFileInput.value = "";
+    });
+  };
+}
+
+var newFileInput = document.getElementById("newfile");
+if (newFileInput) {
+  newFileInput.onchange = function () {
+    readJsonFile(this, "newstatus", function (data, file) {
+      newData = data;
+      newFileName = file.name;
+      runDiff();
+    });
+  };
+}
+
+function runDiff() {
+  var dl = document.getElementById("dllink");
+  var tc = document.getElementById("redesigntclink");
+  var py = document.getElementById("pyshopperlink");
+  if (!dl || !tc) return;
+  dl.style.display = "none";
+  tc.style.display = "none";
+  if (py) py.style.display = "none";
+
+  if (!oldData || !newData) {
+    setStatus("redesignstatus", "", false);
+    return;
+  }
+
+  var opts = {
+    markerFields: true
+  };
+
+  var outData = JSON.parse(JSON.stringify(newData));
+  var oldP = parseDesign(oldData);
+  var newP = parseDesign(outData);
+  var diff = diffDesigns(oldP, newP);
+  buildOutput(outData, diff, opts);
+
+  var jsonText = JSON.stringify(outData, null, 2);
+  if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+  lastBlobUrl = URL.createObjectURL(new Blob([jsonText], { type: "application/json" }));
+  dl.href = lastBlobUrl;
+  dl.download = newFileName.replace(/\.json$/i, "") + "_junkpile.json";
+  dl.style.display = "inline-block";
+
+  if (py) {
+    var pyShopperData = buildPyShopperJson(newData, diff);
+    var pyShopperText = JSON.stringify(pyShopperData, null, 2);
+    if (lastPyShopperBlobUrl) URL.revokeObjectURL(lastPyShopperBlobUrl);
+    lastPyShopperBlobUrl = URL.createObjectURL(new Blob([pyShopperText], { type: "application/json" }));
+    py.href = lastPyShopperBlobUrl;
+    py.download = newFileName.replace(/\.json$/i, "") + "_pyshopper.json";
+    py.style.display = "inline-block";
+  }
+
+  var tcUrl = buildTeamcraftUrl(diff.buy, diff.dyeCounts);
+  if (tcUrl) {
+    tc.href = tcUrl;
+    tc.style.display = "inline-block";
+  }
+
+  setStatus("redesignstatus", "", false);
+}
+</script>
+
+</body>
+</html>
